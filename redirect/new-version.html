@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Redirection vers la dernière version</title>
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: "Inter", sans-serif;
+        background: linear-gradient(135deg, #eef1f7, #d9e0ee);
+    }
+
+    .card {
+        width: 420px;
+        background: #ffffffcc;
+        backdrop-filter: blur(12px);
+        border-radius: 18px;
+        box-shadow:
+            0 10px 20px rgba(0,0,0,0.05),
+            0 4px 6px rgba(0,0,0,0.04);
+        padding: 35px 40px;
+        text-align: center;
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .title {
+        font-size: 1.7em;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: #2d3242;
+    }
+
+    .spinner {
+        width: 55px;
+        height: 55px;
+        border: 5px solid #e6e9f1;
+        border-top: 5px solid #4a6cff;
+        border-radius: 50%;
+        margin: 20px auto;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .text {
+        color: #4a4f61;
+        font-size: 1.05em;
+    }
+
+    .info {
+        margin-top: 14px;
+        font-size: 0.95em;
+        color: #6c7280;
+    }
+
+    .error-box {
+        margin-top: 20px;
+        background: #ffecec;
+        color: #b30000;
+        padding: 14px 18px;
+        border-radius: 10px;
+        border-left: 4px solid #ff4d4d;
+        font-size: 0.95em;
+        display: none;
+        text-align: left;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+    <div class="title">Chargement de la dernière version</div>
+
+    <div class="spinner"></div>
+
+    <div class="text" id="status-text">Recherche en cours…</div>
+    <div class="info" id="sub-info">Veuillez patienter quelques instants</div>
+
+    <div class="error-box" id="error-box"></div>
+</div>
+
+
+<script>
+function showError(msg) {
+    document.getElementById("error-box").style.display = "block";
+    document.getElementById("error-box").textContent = msg;
+
+    document.getElementById("status-text").textContent = "Impossible de continuer";
+    document.getElementById("sub-info").textContent = "Merci de vérifier vos fichiers.";
+}
+
+async function start() {
+    try {
+        const res = await fetch("../versions.json", { cache: "no-store" });
+
+        if (!res.ok) {
+            showError("Erreur : fichier versions.json introuvable.");
+            return;
+        }
+
+        const data = await res.json();
+        const latest = data.latest;
+
+        document.getElementById("status-text").textContent =
+            "Version détectée : " + latest;
+
+        // Essais multiples (professionnel)
+        const paths = ["html/2.html", "2.html", "index.html"];
+        let valid = null;
+
+        for (const p of paths) {
+            const url = `../${latest}/${p}`;
+            const check = await fetch(url, { method: "HEAD" });
+            if (check.ok) {
+                valid = p;
+                break;
+            }
+        }
+
+        if (!valid) {
+            showError("Aucun point d'entrée valable trouvé pour la version " + latest);
+            return;
+        }
+
+        document.getElementById("sub-info").textContent =
+            "Redirection en cours…";
+
+        setTimeout(() => {
+            window.location.href = `../${latest}/${valid}`;
+        }, 900);
+
+    } catch (e) {
+        showError("Erreur JavaScript : " + e.message);
+    }
+}
+
+start();
+</script>
+
+</body>
+</html>
